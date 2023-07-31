@@ -73,6 +73,9 @@ function make()
   echo /usr/bin/make -j$(($(nproc)*3/4)) $@
 }
 
+# use verbose output for ctest
+export CTEST_OUTPUT_ON_FAILURE=1
+
 _git_bin="$(which git)"
 
 # print current branch name from current folder

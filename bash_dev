@@ -1,0 +1,175 @@
+#!/bin/bash
+
+# quick cd to a dev project with autocomplete
+export DEV_ROOT="${HOME}/dev"
+_dev()
+{
+    local cur prev opts
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    opts="$(ls ${DEV_ROOT})"
+
+    COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+    return 0
+}
+
+function dev()
+{
+  cd ${DEV_ROOT}/${1}
+}
+
+complete -F _dev dev
+
+# list of all dev projects currently on git
+function dev_ls()
+{
+  for f in ${DEV_ROOT}/*; do
+    [ -d "${f}/.git" ] || continue;
+    echo -n "$(basename "${f}")"
+  done
+  echo
+}
+
+# quick status of all dev projects
+function dev_st()
+{
+  for proj in $(dev_ls); do
+    pushd ${DEV_ROOT}/${proj} >/dev/null 2>&1
+    local modif_str=""
+    if [ "$(git diff origin/$(git_branch_name) --raw)" != "" ]; then
+      local modif_str="${fmt_bold}${col_red} (*)${col_rst}"
+    fi
+    echo -e "${col_l_white}${proj}${col_rst} is on ${col_l_green}$(git_branch_name)${col_rst}${modif_str}"
+    popd >/dev/null 2>&1
+  done
+}
+
+# cmake macros
+function __cmake()
+{
+  local _bm=${1}
+  shift
+  /usr/bin/cmake \
+   -DCMAKE_C_COMPILER=/usr/bin/clang\
+   -DCMAKE_CXX_COMPILER=/usr/bin/clang++\
+   -DCMAKE_BUILD_TYPE=${_bm}\
+   -DCMAKE_EXPORT_COMPILE_COMMANDS=ON\
+   $@
+}
+
+function cmake_debug()
+{
+  __cmake Debug $@
+}
+
+function cmake_release()
+{
+  __cmake Release $@
+}
+
+function make()
+{
+  echo /usr/bin/make -j$(($(nproc)*3/4)) $@
+}
+
+_git_bin="$(which git)"
+
+# print current branch name from current folder
+function git_branch_name()
+{
+  git rev-parse --abbrev-ref HEAD
+}
+
+# helpers for builtin functions
+function git()
+{
+  if [[ "${1}" == "commit" && "${2}" == "-m" && "${3}" != "" ]]; then
+    shift
+    shift
+    # prepend branch name to all commit messages
+    local _msg="($(git_branch_name)) ${@}"
+    ${_git_bin} commit -m "${_msg}"
+    return 0
+  fi
+
+  ${_git_bin} "${@}"
+}
+
+# GIT: List all branches merged on a specific branch
+function git_list_merged()
+{
+  tgt=$1
+  for b in $(git branch -r --merged ${1}); do
+    echo "${b}: $(git log --pretty='%H - %an (%ad): %s' ${b} | head -n1)"
+  done
+}
+
+# GIT: List all branches not merged on a specific branch
+function git_list_unmerged()
+{
+  tgt=$1
+  for b in $(git branch -r --no-merged ${1}); do
+    echo "${b}: $(git log --pretty='%H - %an (%ad): %s' ${b} | head -n1)"
+  done
+}
+
+## qtcreator macros
+function qtc_config()
+{
+  # generate config entries for Qt5
+  echo '#define QT_CORE_LIB'
+  echo '#define QT_GUI_LIB'
+  echo '#define QT_WIDGETS_LIB'
+  echo '#define GTEST_LINKED_AS_SHARED_LIBRARY 1'
+}
+
+function qtc_includes()
+{
+  # local prohect headers (estimation)
+  find . -iname '*.h' -type f | xargs dirname | sort | uniq
+  # qt include files
+  echo '/usr/include/qt'
+  echo '/usr/include/qt/QtWidgets'
+  echo '/usr/include/qt/QtGui'
+  echo '/usr/include/qt/QtCore'
+  # gnu includes
+  echo '/usr/lib/qt/mkspecs/linux-g++'
+}
+
+function qtc_cflags()
+{
+  echo '-std=gnu17'
+}
+
+function qtc_cxxflags()
+{
+  echo '-std=gnu++17'
+}
+
+function qtc_setup()
+{
+  local matches=($(ls *.includes 2>/dev/null))
+  local match="${matches[0]}"
+  if [[ -f "${match[0]}" ]]; then
+    qtc_includes > "${match[0]}"
+  fi
+
+  local matches=($(ls *.config 2>/dev/null))
+  local match="${matches[0]}"
+  if [[ -f "${match[0]}" ]]; then
+    qtc_config > "${match[0]}"
+  fi
+
+  local matches=($(ls *.cflags 2>/dev/null))
+  local match="${matches[0]}"
+  if [[ -f "${match[0]}" ]]; then
+    qtc_cflags > "${match[0]}"
+  fi
+
+  local matches=($(ls *.cxxflags 2>/dev/null))
+  local match="${matches[0]}"
+  if [[ -f "${match[0]}" ]]; then
+    qtc_cxxflags > "${match[0]}"
+  fi
+}

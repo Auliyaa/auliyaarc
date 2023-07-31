@@ -76,22 +76,20 @@ fi
 # colored GCC warnings and errors
 #export GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01'
 
-# some more ls aliases
-alias ll='ls -ltrha'
-alias la='ls -A'
-alias l='ls -CF'
-
-# Add an "alert" alias for long running commands.  Use like so:
-#   sleep 10; alert
-alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history|tail -n1|sed -e '\''s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//'\'')"'
-
 # Alias definitions.
 # You may want to put all your additions into a separate file like
 # ~/.bash_aliases, instead of adding them here directly.
 # See /usr/share/doc/bash-doc/examples in the bash-doc package.
-
 if [ -f ~/.bash_aliases ]; then
     . ~/.bash_aliases
+fi
+
+if [ -f ~/.bash_dev ]; then
+    . ~/.bash_dev
+fi
+
+if [ -f ~/.bash_video ]; then
+    . ~/.bash_video
 fi
 
 # enable programmable completion features (you don't need to enable
@@ -172,3 +170,6 @@ __prompt_command() {
 
     echo -en "\033]0;${USER}@${HOSTNAME} $(pwd)'\007"
 }
+
+# use verbose output for ctest
+export CTEST_OUTPUT_ON_FAILURE=1

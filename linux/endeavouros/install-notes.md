@@ -139,10 +139,13 @@ yay -S --noconfirm mangohud goverlay
 # to launch a game with mangohud from steam, edit the launch option and set it to:
 # MANGOHUD=1 %command%
 
-
 # regenerate boot options and update initramfs
 # ----------------------------------------------
 sudo reinstall-kernels 
+
+# and reboot
+# ----------------------------------------------
+sudo reboot
 ```
 
 ## Additional system setup

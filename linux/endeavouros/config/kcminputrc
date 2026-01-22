@@ -1,0 +1,14 @@
+[Keyboard]
+NumLock=0
+
+[Libinput][12851][4113][Ducky Ducky One 3̠]
+PointerAcceleration=0.000
+PointerAccelerationProfile=2
+
+[Libinput][5426][153][Razer Razer Basilisk V3]
+PointerAcceleration=0.000
+PointerAccelerationProfile=1
+
+[Mouse]
+X11LibInputXAccelProfileFlat=true
+cursorTheme=breeze_cursors

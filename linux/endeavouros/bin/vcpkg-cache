@@ -1,0 +1,228 @@
+#!/usr/bin/python3
+ 
+import argparse
+import os
+import zipfile
+import fnmatch
+import sys
+import shutil
+# sudo dnf install python3-tabulate.noarch
+from tabulate import tabulate
+
+def find_zip_files(folder):
+    """Recursively find all zip files in a given folder."""
+    for root, _, files in os.walk(folder):
+        for file in files:
+            if file.endswith(".zip"):
+                yield os.path.join(root, file)
+
+
+def read_control_file(zip_path):
+    """Open a zip file and read the contents of the CONTROL file at its root."""
+    try:
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            if "CONTROL" in zip_ref.namelist():
+                with zip_ref.open("CONTROL") as control_file:
+                    return control_file.read().decode("utf-8")
+            else:
+                return None
+    except Exception as e:
+        return f"Error reading CONTROL file from {zip_path}: {e}"
+
+
+def parse_control_file(contents):
+    package = None
+    version = None
+    port_version = 0
+    arch = None
+
+    for line in contents.split("\n"):
+        if line.startswith("Package:"):
+            package = line.split(" ")[1]
+        if line.startswith("Version:"):
+            version = line.split(" ")[1]
+        if line.startswith("Port-Version:"):
+            port_version = int(line.split(" ")[1])
+        if line.startswith("Architecture:"):
+            arch = line.split(" ")[1]
+
+    return package, version, port_version, arch
+
+
+def file_size_str(size_bytes) -> str:
+    units = ["B", "kB", "MB", "GB", "TB"]
+    scale = 1024.0
+    for unit in units:
+        if size_bytes < scale:
+            return f"{size_bytes:.2f} {unit}"
+        size_bytes /= scale
+    return f"{size_bytes:.2f} PB"  # fallback in case it's very large
+
+
+def ask_confirmation(prompt="Confirm? (Y/N): ", default="no"):
+    # Validate the default argument
+    default = default.lower()
+    if default not in ("yes", "no"):
+        raise ValueError("default must be 'yes' or 'no'")
+    
+    # Modify prompt to show default option (e.g., "[Y/n]" for default=yes)
+    if default == "yes":
+        prompt_mod = prompt.replace("(Y/N)", "[Y/n]")
+    else:
+        prompt_mod = prompt.replace("(Y/N)", "[y/N]")
+    
+    while True:
+        answer = input(prompt_mod).strip().lower()
+        
+        # If empty input, return the default
+        if not answer:
+            return default == "yes"
+        
+        # Check for Y/N input
+        if answer in ('y', 'yes'):
+            return True
+        elif answer in ('n', 'no'):
+            return False
+        else:
+            print("Please enter Y/y (Yes), N/n (No), or press Enter for default.")
+
+
+def vcpkg_cache_list(cache: dict, cache_folder: str) -> int:
+    table = []
+    headers = ["name", "version", "size", "arch", "path"]
+
+    archives_folder = os.path.join(cache_folder,"archives")
+    total_sz = 0
+    for zipfile, data in sorted(cache.items(), key=lambda item: item[1][0]):
+        name=data[0]
+        version=f"{data[1]}{data[2]}"
+        arch=data[3]
+        sz = os.path.getsize(zipfile)
+        table.append([name,version,file_size_str(sz),arch,zipfile.replace(archives_folder,"")])
+        total_sz += sz
+    print(tabulate(table, headers=headers, tablefmt="plain"))
+    print("")
+    print(f"Total size: {file_size_str(total_sz)}")
+    return 0
+
+
+def vcpkg_cache_remove(cache: dict, args) -> int:
+    to_remove=dict()
+    for zipfile, data in cache.items():
+        if fnmatch.fnmatch(f"{data[0]}-{data[1]}{data[2]}", f"*{args.remove}*"):
+            to_remove[zipfile] = data
+    if len(to_remove) == 0:
+        print("Nothing to do")
+        return 0
+
+    if not args.noconfirm and not ask_confirmation(f"This will remove {len(to_remove)} items from cache. Do you want to continue ? (Y/N)", default="no"):
+        return 1
+
+    for zipfile, data in to_remove.items():
+        print(f"removing cache entry for {data[0]} v{data[1]}#{data[2]} -> {zipfile}")
+        os.remove(zipfile)
+    return 0
+
+
+def vcpkg_cache_clean(cache: dict, args) -> int:
+    pkg_to_versions=dict()
+    pkg_to_zipfile=dict()
+    for zipfile, data in cache.items():
+        name=data[0]
+        version=f"{data[1]}{data[2]}"
+        pkg_to_zipfile[f"{name}-{version}"] = zipfile
+        if name not in pkg_to_versions: pkg_to_versions[name] = []
+        pkg_to_versions[name].append(version)
+        pkg_to_versions[name] = sorted(pkg_to_versions[name], reverse=True)
+    
+    to_remove=dict()
+    table = []
+    headers = ["name", "version", "latest", "path"]
+    for name, versions in pkg_to_versions.items():
+        if len(versions) == 1: continue
+        for version in versions[1:]:
+            if version != versions[0]:
+                table.append([name,version,versions[0],pkg_to_zipfile[f"{name}-{version}"]])
+                to_remove[f"{name}-{version}"] = pkg_to_zipfile[f"{name}-{version}"]
+    
+    if len(to_remove) == 0:
+        print("Nothing to do")
+        return 0
+
+    print(tabulate(table, headers=headers, tablefmt="plain"))
+
+    if not args.noconfirm and not ask_confirmation(f"This will remove {len(to_remove)} items from cache. Do you want to continue ? (Y/N)", default="no"):
+        return 1
+
+    for name,zipfile in to_remove.items():
+        print(f"removing cache entry for {name} -> {zipfile}")
+        os.remove(zipfile)
+    return 0
+
+
+def vcpkg_buildtree_clean(buildtree_folder: str, args) -> int:
+    if not args.noconfirm and not ask_confirmation(f"Do you want to clean the vcpkg buildtree folder ({buildtree_folder}) ? (Y/N)", default="no"):
+        return 1
+    shutil.rmtree(buildtree_folder)    
+    return 0
+
+def main():
+    default_cache_folder = os.path.expanduser("~/.cache/vcpkg")
+    if os.name == 'nt':
+        # https://learn.microsoft.com/en-us/vcpkg/consume/binary-caching-default?pivots=shell-powershell
+        default_cache_folder = os.path.join(os.environ["LOCALAPPDATA"],"vcpkg","archives")
+        if not os.path.exists(default_cache_folder):
+            default_cache_folder = os.path.join(os.environ["APPDATA"],"vcpkg","archives")
+    buildtree_folder = None
+    if "VCPKG_ROOT" in os.environ:
+        buildtree_folder = os.path.join(os.environ["VCPKG_ROOT"], "buildtrees")
+        
+    parser = argparse.ArgumentParser(description="Parse command-line arguments.")
+    parser.add_argument(
+        "--x-cache-folder",
+        type=str,
+        default=default_cache_folder,
+        help=f"Specify the cache folder (default: {default_cache_folder})",
+    )
+    parser.add_argument(
+        "--noconfirm",
+        action="store_true",
+        default=False,
+        help=f"Disable confirmation inputs",
+    )
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument(
+        "--list", "-l",
+        action="store_true",
+        help="List all entries in the cache",
+    )
+    group.add_argument(
+        "--remove", "--rm",
+        type=str,
+        help="Remove a specific entry in cache. Wildcards supported."
+    )
+    group.add_argument(
+        "--clean",
+        action="store_true",
+        help="Cleanup any older version still in cache and only keep the latest version for each package."
+    )
+    args = parser.parse_args()
+
+    cache = dict()
+    for zipfile in find_zip_files(args.x_cache_folder):
+        cache[zipfile] = parse_control_file(read_control_file(zipfile))
+
+    # Print the selected action
+    if args.list:
+        sys.exit(vcpkg_cache_list(cache, default_cache_folder))
+    elif args.remove:
+        sys.exit(vcpkg_cache_remove(cache, args))
+    elif args.clean:
+        ret = vcpkg_cache_clean(cache, args)
+        if ret != 0: sys.exit(ret)
+        if buildtree_folder is not None:
+            sys.exit(vcpkg_buildtree_clean(buildtree_folder, args))
+        sys.exit(0)
+
+if __name__ == "__main__":
+    main()

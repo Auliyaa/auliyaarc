@@ -1,0 +1,14 @@
+[Annotations]
+annotationToolType=2
+
+[FileDialogSize]
+2 screens: Height=540
+2 screens: Width=960
+
+[ImageSave]
+lastImageSaveAsLocation=file:///home/auliyaa/Downloads/Screenshot_20250620_232107.png
+lastImageSaveLocation=file:///home/auliyaa/Pictures/Screenshots/Screenshot_20251228_183356.png
+translatedScreenshotsFolder=Screenshots
+
+[VideoSave]
+translatedScreencastsFolder=Screencasts

@@ -1,0 +1,10 @@
+{
+  "version": 0.1,
+  "workspaces": [
+    {
+      "id": "eebd5b14-f40a-4a55-95b9-ccd3d9cd8a4a",
+      "name": "requestly",
+      "path": "/home/auliyaa/dev/requestly"
+    }
+  ]
+}

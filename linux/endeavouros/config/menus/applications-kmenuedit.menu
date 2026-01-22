@@ -1,0 +1,32 @@
+<!DOCTYPE Menu PUBLIC '-//freedesktop//DTD Menu 1.0//EN' 'http://www.freedesktop.org/standards/menu-spec/1.0/menu.dtd'>
+<Menu>
+ <Menu>
+  <Name>Games</Name>
+  <Layout>
+   <Merge type="menus"/>
+   <Menuname>Arcade</Menuname>
+   <Menuname>Board</Menuname>
+   <Menuname>Card</Menuname>
+   <Menuname>Kidsgames</Menuname>
+   <Menuname>Logic</Menuname>
+   <Menuname>TacticStrategy</Menuname>
+   <Merge type="files"/>
+   <Filename>com.usebottles.bottles.desktop</Filename>
+   <Filename>net.lutris.Lutris.desktop</Filename>
+   <Filename>olympus.desktop</Filename>
+   <Filename>parsecd.desktop</Filename>
+   <Filename>org.prismlauncher.PrismLauncher.desktop</Filename>
+   <Filename>steam.desktop</Filename>
+   <Filename>suyu.desktop</Filename>
+  </Layout>
+  <Exclude>
+   <Filename> Aurora Launcher.desktop</Filename>
+  </Exclude>
+ </Menu>
+ <Menu>
+  <Name>.hidden</Name>
+  <Include>
+   <Filename> Aurora Launcher.desktop</Filename>
+  </Include>
+ </Menu>
+</Menu>

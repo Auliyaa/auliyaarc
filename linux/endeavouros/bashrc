@@ -1,0 +1,19 @@
+#
+# run qt designer
+#
+function designer()
+{
+  /usr/lib/qt6/bin/designer "${@}"
+}
+
+#
+# dump yay cheatsheet to stdout
+#
+function cheat_yay() {
+  cat <<EOF
+$(tput bold)YAY CHEATSHEET$(tput sgr0)
+
+$(tput setaf 2)yay ... --editmenu$(tput sgr0)        # Enable PKGBUILD editing
+$(tput setaf 2)yay -Qqtd$(tput sgr0)                 # List orphaned (unused ?) packages
+EOF
+}

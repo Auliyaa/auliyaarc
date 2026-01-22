@@ -1,0 +1,32 @@
+[Authentication]
+MigratedToKeychain=false
+
+[BookmarkEditor]
+2 screens: Height=223
+2 screens: Width=400
+
+[CompletionItems]
+CategoryCompletion=
+IpAddressCompletion=192.168.1.100
+LabelCompletion=
+LocationCompletion=//192.168.1.100/data,//192.168.1.100/downloads
+LoginCompletion=
+WorkgroupCompletion=
+
+[CustomSettingsDialog]
+2 screens: Height=436
+2 screens: Width=520
+
+[MainWindow]
+FirstStartup=true
+
+[MountDialog]
+2 screens: Height=256
+2 screens: Width=418
+
+[Notification Messages]
+DockToSystemTrayInfo=false
+
+[UserInterface]
+MainWindowTabOrientation=Top
+SharesViewMode=ListView

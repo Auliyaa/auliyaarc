@@ -1,0 +1,9 @@
+[Audio Preview Settings]
+Autoplay=false
+
+[FileDialogSize]
+2 screens: Height=640
+2 screens: Width=1138
+
+[General]
+SplitterSizes=533,720

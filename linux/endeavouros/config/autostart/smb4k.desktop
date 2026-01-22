@@ -1,0 +1,6 @@
+[Desktop Entry]
+Exec=/home/auliyaa/dev/my-bash/autostart/smb4k
+Icon=application-x-shellscript
+Name=smb4k
+Type=Application
+X-KDE-AutostartScript=true

@@ -1,0 +1,77 @@
+#!/usr/bin/python3
+
+import argparse
+import os
+import sys
+import json
+from pathlib import Path
+import fnmatch
+# sudo dnf install python3-tabulate.noarch
+from tabulate import tabulate
+
+def index_registry(registry_path: str):
+  result = []
+  registry_name = Path(registry_path).name
+  versions_dir = os.path.join(registry_path, "versions")
+  if not os.path.exists(versions_dir):
+    return []
+  for root, _, files in os.walk(versions_dir):
+    for file in files:
+      pkg_name=Path(os.path.basename(file)).stem
+      with open(os.path.join(root,file)) as fd:
+        d = json.load(fd)
+        if 'versions' in d:
+          for entry in d["versions"]:
+            if "version" in entry:
+              entry["name"] = pkg_name
+              entry["registry"] = registry_name
+              if "port-version" in entry:
+                entry["version-full"] = f"{entry['version']}#{entry['port-version']}"
+              else:
+                entry["version-full"] = f"{entry['version']}#0"
+              entry["pattern"] = f"{entry['name']}-{entry['version-full']}"
+              result.append(entry)
+  return result
+
+def main():
+  parser = argparse.ArgumentParser(description='Search VCPKG packages across multiple registries')
+  parser.add_argument('pattern', help='Search pattern to match against package names and versions')
+  parser.add_argument('--x-registry-path', action='append', default=[], 
+                      help='Path to a VCPKG registry (can be specified multiple times)')
+  parser.add_argument('--showduplicates', action='store_true',
+                       help='Show all versions including duplicates across registries')
+  args = parser.parse_args()
+    
+  if not args.x_registry_path:
+    print("Warning: No registry paths specified. Nothing to search.")
+    sys.exit(1)
+    
+  # Index all registries
+  all_packages = []
+  for reg_path in args.x_registry_path:
+    all_packages.extend(index_registry(os.path.expanduser(reg_path)))
+    
+  # filter requested pattern
+  match_packages = sorted(list(filter(lambda entry: fnmatch.fnmatch(entry["pattern"], f"*{args.pattern}*"), all_packages)),  key=lambda item: item["pattern"], reverse=True)
+
+  if not args.showduplicates:
+    # reparse matched package to find each unique name
+    # refilter results & sort by version then only keep the latest one
+    unique_names = set()
+    for pkg in match_packages:
+      unique_names.add(pkg["name"])
+    tmp=[]
+    for pkg_name in unique_names:
+      f = sorted(list(filter(lambda entry: entry["name"] == pkg_name, match_packages)), key=lambda entry: entry["version-full"], reverse=True)
+      tmp.append(f[0])
+    match_packages = tmp
+
+  table = []
+  headers = ["name", "version", "registry", "baseline"]
+
+  for pkg in match_packages:
+      table.append([pkg["name"], pkg["version-full"], pkg["registry"], pkg["git-tree"]])
+  print(tabulate(table, headers=headers, tablefmt="plain"))
+
+if __name__ == "__main__":
+    main()

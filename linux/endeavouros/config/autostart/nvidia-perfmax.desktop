@@ -1,0 +1,4 @@
+[Desktop Entry]
+Type=Application
+Name=Autoset Nvidia to Performance Mode
+Exec="nvidia-settings" "-a" "[gpu:0]/GpuPowerMizerMode=1"

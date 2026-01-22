@@ -1,0 +1,14 @@
+[Appearance]
+Skin=materia-dark
+SkinInstalledWithKns=true
+
+[Desktop Entry]
+DefaultProfile=Auliyaa.profile
+
+[Dialogs]
+FirstRun=false
+
+[Window]
+Height=90
+ShowTitleBar=false
+Width=100

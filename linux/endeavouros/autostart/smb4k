@@ -1,0 +1,40 @@
+#!/bin/bash
+
+smb4k &
+
+start_ms=$(date +%s%3N)
+timeout_ms=10000
+
+while : ;do
+  now_ms=$(date +%s%3N)
+  elapsed_ms=$((now_ms - start_ms))
+
+  if [ "$elapsed_ms" -ge "$timeout_ms" ]; then
+    exit 1
+  fi
+
+  # 1) DBus service present
+  if qdbus6  2>/dev/null | grep 'org.kde.smb4k'; then
+    echo window found
+    # 2) Main application object present
+    if qdbus6 org.kde.smb4k  2>/dev/null | grep '/MainApplication'; then
+      echo main app found
+      if qdbus6 org.kde.smb4k /MainApplication 2>/dev/null | grep closeAllWindows; then
+        echo command found
+        sleep 1
+        qdbus6 org.kde.smb4k /MainApplication org.qtproject.Qt.QApplication.closeAllWindows
+        exit 0
+      else
+        echo command not found
+      fi
+    else
+      echo main app not found
+    fi
+  else
+    echo window not found
+  fi
+
+  # short, controlled poll delay (100 ms)
+  sleep 0.1
+done
+

@@ -1,0 +1,91 @@
+#!/bin/bash
+
+DOWNGRADE_ARCH="$(pacman-conf Architecture | head -n 1)"
+DOWNGRADE_ALA_URL="https://archive.archlinux.org"
+PKG_COUNT=10
+NVIDIA_PKGS=("libxnvctrl" "nvidia-open-dkms" "nvidia-settings" "nvidia-utils" "lib32-nvidia-utils")
+
+# taken from /usr/bin/downgrade
+# -------------------------------
+function sed_msg()
+{
+  local msg="$1"
+  shift
+
+  if ! sed "$@" 2>/dev/null; then
+    printf "%s\n" "Failed $msg" >&2
+    exit 1
+  fi
+}
+
+function search_ala()
+{
+  local name=$1 uriname pkgfile_re index
+  
+  uriname=$(sed 's/+/%2B/g' <<<"$name")
+
+  pkgfile_re="$uriname-[^-]+-[0-9.]+-(any|$DOWNGRADE_ARCH)\\.pkg\\.tar\\.(gz|xz|zst)"
+  index="$DOWNGRADE_ALA_URL/packages/${uriname:0:1}/$uriname/"
+
+  curl --fail --silent "$index" | sed_msg "to parse A.L.A." -E '
+    /.* href="('"$pkgfile_re"')".*/!d;
+    s||'"$index"'\1|g; s|\+| |g; s|%|\\x|g' | xargs -0 printf "%b"
+}
+# -------------------------------
+
+function remote_pkginfo()
+{
+  local uri="${1}"
+  curl -sL "${uri}" | tar --zstd -xOf - .PKGINFO | grep '^\(pkgver\|pkgname\)' | sed 's/pkgname =/Name:/' | sed 's/pkgver = /Version: /'
+}
+
+function downgrade_nvidia()
+{
+  # fetch local nvidia version
+  local nvidia_ver="$(yay -Qi nvidia-open-dkms | grep "^Version" | awk '{print $3}')"
+
+  if [[ "${nvidia_ver}" == "" ]]; then
+    echo "Failed to locate nvidia version, is nvidia-open-dkms installed ?"
+    return 1
+  fi
+
+  echo "Current nvidia version: ${nvidia_ver}"
+
+  declare -A pkgver_to_uri
+  local candidates=()
+
+  for uri in $(search_ala nvidia-open-dkms); do
+    if [[ "$(basename $uri)" =~ nvidia-open-dkms-([0-9]+\.[0-9]+).* ]]; then
+      pkgver_to_uri["${BASH_REMATCH[1]}"]="${uri}"
+    fi
+  done
+
+  IFS=$'\n' candidates=($(sort -r <<<"${!pkgver_to_uri[@]}"))
+  unset IFS
+
+  selected="$(gum choose --header="Select which version to downgrade to" "${candidates[@]}")"
+
+  targets=()
+  for pkg in ${NVIDIA_PKGS[@]}; do
+    tgt="$(search_ala "${pkg}" | grep "${selected}" | tail -n 1)"
+    if [[ "${tgt}" == "" ]]; then
+      echo "Failed to find a package for ${pkg} v${selected}"
+      exit 1
+    fi
+    targets+=("${tgt}")
+  done
+
+  echo "The following packages will be installed: "
+  for tgt in "${targets[@]}"; do
+    remote_pkginfo "${tgt}"
+  done
+
+  gum confirm "Do you want to continue ?" || exit $?
+
+  echo sudo pacman -U "${targets[@]}"
+  sudo pacman -U "${targets[@]}" || exit $?
+
+  nvidia-inst -t || exit $?
+}
+
+downgrade_nvidia

@@ -1,0 +1,412 @@
+# Enable the subsequent settings only in interactive sessions
+case $- in
+  *i*) ;;
+    *) return;;
+esac
+
+# home to all dev projects
+export DEV_ROOT="${HOME}/dev"
+
+# Path to your oh-my-bash installation.
+export OSH="${DEV_ROOT}/auliyaarc/linux/oh-my-bash"
+
+# Set name of the theme to load. Optionally, if you set this to "random"
+# it'll load a random theme each time that oh-my-bash is loaded.
+OSH_THEME="agnoster"
+# OSH_THEME="powerlight"
+
+# If you set OSH_THEME to "random", you can ignore themes you don't like.
+# OMB_THEME_RANDOM_IGNORED=("powerbash10k" "wanelo")
+
+# Uncomment the following line to use case-sensitive completion.
+# OMB_CASE_SENSITIVE="true"
+
+# Uncomment the following line to use hyphen-insensitive completion. Case
+# sensitive completion must be off. _ and - will be interchangeable.
+# OMB_HYPHEN_SENSITIVE="false"
+
+# Uncomment the following line to disable bi-weekly auto-update checks.
+DISABLE_AUTO_UPDATE="true"
+
+# Uncomment the following line to change how often to auto-update (in days).
+# export UPDATE_OSH_DAYS=13
+
+# Uncomment the following line to disable colors in ls.
+# DISABLE_LS_COLORS="true"
+
+# Uncomment the following line to disable auto-setting terminal title.
+# DISABLE_AUTO_TITLE="true"
+
+# Uncomment the following line to enable command auto-correction.
+# ENABLE_CORRECTION="true"
+
+# Uncomment the following line to display red dots whilst waiting for completion.
+# COMPLETION_WAITING_DOTS="true"
+
+# Uncomment the following line if you want to disable marking untracked files
+# under VCS as dirty. This makes repository status check for large repositories
+# much, much faster.
+DISABLE_UNTRACKED_FILES_DIRTY="true"
+
+# Uncomment the following line if you don't want the repository to be considered dirty
+# if there are untracked files.
+# SCM_GIT_DISABLE_UNTRACKED_DIRTY="true"
+
+# Uncomment the following line if you want to completely ignore the presence
+# of untracked files in the repository.
+# SCM_GIT_IGNORE_UNTRACKED="true"
+
+# Uncomment the following line if you want to change the command execution time
+# stamp shown in the history command output.  One of the following values can
+# be used to specify the timestamp format.
+# * 'mm/dd/yyyy'     # mm/dd/yyyy + time
+# * 'dd.mm.yyyy'     # dd.mm.yyyy + time
+# * 'yyyy-mm-dd'     # yyyy-mm-dd + time
+# * '[mm/dd/yyyy]'   # [mm/dd/yyyy] + [time] with colors
+# * '[dd.mm.yyyy]'   # [dd.mm.yyyy] + [time] with colors
+# * '[yyyy-mm-dd]'   # [yyyy-mm-dd] + [time] with colors
+# If not set, the default value is 'yyyy-mm-dd'.
+# HIST_STAMPS='yyyy-mm-dd'
+
+# Uncomment the following line if you do not want OMB to overwrite the existing
+# aliases by the default OMB aliases defined in lib/*.sh
+# OMB_DEFAULT_ALIASES="check"
+
+# Would you like to use another custom folder than $OSH/custom?
+# OSH_CUSTOM=/path/to/new-custom-folder
+
+# To disable the uses of "sudo" by oh-my-bash, please set "false" to
+# this variable.  The default behavior for the empty value is "true".
+OMB_USE_SUDO=true
+
+# To enable/disable display of Python virtualenv and condaenv
+# OMB_PROMPT_SHOW_PYTHON_VENV=true  # enable
+# OMB_PROMPT_SHOW_PYTHON_VENV=false # disable
+
+# Which completions would you like to load? (completions can be found in ~/.oh-my-bash/completions/*)
+# Custom completions may be added to ~/.oh-my-bash/custom/completions/
+# Example format: completions=(ssh git bundler gem pip pip3)
+# Add wisely, as too many completions slow down shell startup.
+completions=(
+  git
+  composer
+  ssh
+  makefile
+  pip
+  system
+  tmux
+)
+
+# Which aliases would you like to load? (aliases can be found in ~/.oh-my-bash/aliases/*)
+# Custom aliases may be added to ~/.oh-my-bash/custom/aliases/
+# Example format: aliases=(vagrant composer git-avh)
+# Add wisely, as too many aliases slow down shell startup.
+aliases=(
+  general
+)
+
+# Which plugins would you like to load? (plugins can be found in ~/.oh-my-bash/plugins/*)
+# Custom plugins may be added to ~/.oh-my-bash/custom/plugins/
+# Example format: plugins=(rails git textmate ruby lighthouse)
+# Add wisely, as too many plugins slow down shell startup.
+plugins=(
+  git
+  bashmarks
+  progress
+)
+
+# Which plugins would you like to conditionally load? (plugins can be found in ~/.oh-my-bash/plugins/*)
+# Custom plugins may be added to ~/.oh-my-bash/custom/plugins/
+# Example format:
+#  if [ "$DISPLAY" ] || [ "$SSH" ]; then
+#      plugins+=(tmux-autoattach)
+#  fi
+
+source "$OSH"/oh-my-bash.sh
+
+#
+# system language
+#
+export LANG=en_US.UTF-8
+
+#
+# preferred editor
+#
+export EDITOR='nano'
+
+#
+# ssh
+#
+export SSH_KEY_PATH="~/.ssh/id_rsa"
+
+#
+# dev folder
+#
+_dev_complete() {
+  local cur
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  COMPREPLY=( $(compgen -d "${DEV_ROOT}/${cur}" 2>/dev/null | sed "s|${DEV_ROOT}/||") )
+} && complete -F _dev_complete dev
+
+dev()
+{
+  cd "${DEV_ROOT}/${@}"
+}
+
+#
+# vcpkg
+#
+export VCPKG_DISABLE_METRICS=1
+export VCPKG_ROOT="${DEV_ROOT}/vcpkg"
+export PATH="${PATH}:${VCPKG_ROOT}"
+export VCPKG_OVERLAY_PORTS="${DEV_ROOT}/vcpkg-overlays"
+
+function vcpkg_install()
+{
+  cd "${DEV_ROOT}"
+  git clone https://github.com/microsoft/vcpkg.git || return $?
+  git clone git@github.com:Auliyaa/vcpkg-registry.git ./auliyaa-vcpkg-registry || return $?
+  cd vcpkg || return $?
+  cp -r ../auliyaa-vcpkg-registry/triplets ./ || return $?
+  ./bootstrap-vcpkg.sh -disableMetrics || return $?
+  mkdir -p ${DEV_ROOT}/vcpkg-overlays || return $?
+}
+
+#
+# cmake helpers
+#
+function cmake_debug()
+{
+  cmake --preset unix-debug "${@}"
+}
+
+function cmake_reldeb()
+{
+  cmake --preset unix-relwithdeb "${@}"
+}
+
+function cmake_rel()
+{
+  cmake --preset unix-release "${@}"
+}
+
+# 
+# colored cat
+#
+function ccat()
+{
+  bat "${@}"
+}
+
+#
+# alias to create a python virtualenv
+#
+function python_venv()
+{
+  d="${1}"
+  if [[ "${d}" == "" ]]; then
+    d="./venv"
+  fi
+  python -m venv "${d}"
+  echo "source ${d}/bin/activate"
+}
+
+#
+# pretty lsblk
+#
+alias lsblk='lsblk -io NAME,LABEL,SIZE,TYPE,MOUNTPOINTS,UUID,MODEL'
+
+#
+# systemctl wrapper with history on last unit
+#
+__sctl_last=""
+function sctl()
+{
+  local cmd="${1}"
+  local unit="${2}"
+  if [[ "${cmd}" == "dr" || "${cmd}" == "daemon-reload" ]]; then
+    sudo systemctl daemon-reload
+    return $?
+  fi
+  if [[ "${unit}" == "" ]]; then
+    unit="${__sctl_last}"
+  fi
+
+  __sctl_last="${unit}"
+  sudo systemctl "${cmd}" "${unit}"
+  return $?
+}
+
+#
+# print current graphical session (x11 or wayland)
+#
+function loginctl_session_type()
+{
+  loginctl show-session $(loginctl --json=short | jq -r '.[0].session') -p Type | cut -f 2- -d '='
+}
+
+#
+# kill a process from a search string
+#
+function pkill()
+{
+  if [[ "${@}" == "" ]]; then
+    echo 'pkill <search string>'
+    return 1
+  fi
+
+  for p in "$(ps aux | grep "${@}" | grep -v grep | awk '{print $2}')"; do
+    if [[ "${p}" == "" ]]; then
+      continue
+    fi
+    echo ".. killing pid ${p}"
+    kill -9 $p
+  done
+}
+
+#
+# dump tmux cheatsheet to stdout
+#
+function cheat_tmux() {
+  cat <<EOF
+$(tput bold)TMUX CHEATSHEET$(tput sgr0)
+
+$(tput setaf 6)$(tput bold)=== Session Management ===$(tput sgr0)
+$(tput setaf 2)tmux$(tput sgr0)                      # Start new session
+$(tput setaf 2)tmux new -s <name>$(tput sgr0)        # Start named session
+$(tput setaf 2)tmux ls$(tput sgr0)                   # List sessions
+$(tput setaf 2)tmux a$(tput sgr0)                    # Attach to last session
+$(tput setaf 2)tmux a -t <name>$(tput sgr0)          # Attach to named session
+$(tput setaf 2)tmux kill-session -t <name>$(tput sgr0) # Kill session
+$(tput setaf 2)tmux kill-server$(tput sgr0)          # Kill all sessions
+
+$(tput setaf 6)$(tput bold)=== Prefix Key (Default: $(tput smul)Ctrl+b$(tput rmul)) ===$(tput sgr0)
+
+$(tput setaf 6)$(tput bold)=== Sessions ===$(tput sgr0)
+$(tput setaf 3)<Prefix> d$(tput sgr0)                # Detach from session
+$(tput setaf 3)<Prefix> s$(tput sgr0)                # List sessions
+$(tput setaf 3)<Prefix> \$$(tput sgr0)                # Rename session
+$(tput setaf 3)<Prefix> L$(tput sgr0)                # Move to last session
+$(tput setaf 3)<Prefix> ($(tput sgr0)                # Previous session
+$(tput setaf 3)<Prefix> )$(tput sgr0)                # Next session
+
+$(tput setaf 6)$(tput bold)=== Windows ===$(tput sgr0)
+$(tput setaf 3)<Prefix> c$(tput sgr0)                # Create window
+$(tput setaf 3)<Prefix> &$(tput sgr0)                # Kill window
+$(tput setaf 3)<Prefix> ,$(tput sgr0)                # Rename window
+$(tput setaf 3)<Prefix> p$(tput sgr0)                # Previous window
+$(tput setaf 3)<Prefix> n$(tput sgr0)                # Next window
+$(tput setaf 3)<Prefix> 0-9$(tput sgr0)             # Switch to window number
+$(tput setaf 3)<Prefix> w$(tput sgr0)                # List windows
+$(tput setaf 3)<Prefix> f$(tput sgr0)                # Find window by name
+$(tput setaf 3)<Prefix> .$(tput sgr0)                # Move window (enter number)
+
+$(tput setaf 6)$(tput bold)=== Panes ===$(tput sgr0)
+$(tput setaf 3)<Prefix> %$(tput sgr0)                # Split vertically
+$(tput setaf 3)<Prefix> "$(tput sgr0)                # Split horizontally
+$(tput setaf 3)<Prefix> x$(tput sgr0)                # Kill pane
+$(tput setaf 3)<Prefix> z$(tput sgr0)                # Zoom pane (toggle)
+$(tput setaf 3)<Prefix> !$(tput sgr0)                # Convert pane to window
+$(tput setaf 3)<Prefix> {$(tput sgr0)                # Move pane left
+$(tput setaf 3)<Prefix> }$(tput sgr0)                # Move pane right
+$(tput setaf 3)<Prefix> <Arrow>$(tput sgr0)          # Switch panes
+$(tput setaf 3)<Prefix> ;$(tput sgr0)                # Toggle last pane
+$(tput setaf 3)<Prefix> o$(tput sgr0)                # Switch to next pane
+$(tput setaf 3)<Prefix> q$(tput sgr0)                # Show pane numbers
+$(tput setaf 3)<Prefix> Space$(tput sgr0)            # Toggle layouts
+$(tput setaf 3)<Prefix> Alt+<Arrow>$(tput sgr0)      # Resize pane (5 cells)
+$(tput setaf 3)<Prefix> Ctrl+<Arrow>$(tput sgr0)     # Resize pane (1 cell)
+
+$(tput setaf 6)$(tput bold)=== Copy Mode (vi mode) ===$(tput sgr0)
+$(tput setaf 3)<Prefix> [$(tput sgr0)                # Enter copy mode
+$(tput setaf 4)q$(tput sgr0)                         # Quit mode
+$(tput setaf 4)<Space>$(tput sgr0)                   # Start selection
+$(tput setaf 4)v$(tput sgr0)                         # Begin selection (vi)
+$(tput setaf 4)y$(tput sgr0)                         # Yank selection
+$(tput setaf 4)<Enter>$(tput sgr0)                   # Copy selection
+$(tput setaf 4)/$(tput sgr0)                         # Search forward
+$(tput setaf 4)?$(tput sgr0)                         # Search backward
+$(tput setaf 4)n$(tput sgr0)                         # Next match
+$(tput setaf 4)N$(tput sgr0)                         # Previous match
+
+$(tput setaf 6)$(tput bold)=== Misc ===$(tput sgr0)
+$(tput setaf 3)<Prefix> t$(tput sgr0)                # Show clock
+$(tput setaf 3)<Prefix> ?$(tput sgr0)                # List shortcuts
+$(tput setaf 3)<Prefix> :$(tput sgr0)                # Enter command mode
+$(tput setaf 3)<Prefix> r$(tput sgr0)                # Redraw window
+$(tput setaf 3)<Prefix> ~$(tput sgr0)                # Show messages
+$(tput setaf 3)<Prefix> D$(tput sgr0)                # Choose client to detach
+$(tput setaf 3)<Prefix> [$(tput sgr0)                # Enter scrollback mode
+
+$(tput setaf 6)$(tput bold)=== Command Mode (after <Prefix> :) ===$(tput sgr0)
+$(tput setaf 5)setw synchronize-panes$(tput sgr0)    # Send input to all panes
+$(tput setaf 5)setw synchronize-panes off$(tput sgr0) # Disable synchronized panes
+$(tput setaf 5)set -g mouse on$(tput sgr0)          # Enable mouse mode
+$(tput setaf 5)set -g mouse off$(tput sgr0)         # Disable mouse mode
+$(tput setaf 5)list-keys$(tput sgr0)                # Show all key bindings
+$(tput setaf 5)source-file ~/.tmux.conf$(tput sgr0) # Reload config file
+
+$(tput setaf 6)$(tput bold)=== Tips ===$(tput sgr0)
+- Add '$(tput setaf 5)set -g mouse on$(tput sgr0)' to ~/.tmux.conf for mouse control
+- Use '$(tput setaf 2)tmux -V$(tput sgr0)' to check version
+- Hold $(tput smul)<Prefix>$(tput rmul) and press arrow to resize panes
+- Hold $(tput smul)Shift$(tput rmul) for scroll in copy mode
+EOF
+}
+
+#
+# fetch sudo rights using a GUI
+# Note: to reset sudoers at return, use trap 'sudo -k' RETURN
+#
+function _gsudo
+{
+  SUDO_ASKPASS="$(which zenity-askpass)" sudo -A "${@}"
+}
+
+#
+# show system info on bash start
+#
+which fastfetch >/dev/null 2>&1 && fastfetch -c screenfetch
+
+#
+# detect current os preset
+# -> "deck", "wsl", "endeavouros"
+#
+function current_os_preset()
+{
+  # steam-deck user is always deck
+  if [[ "$(whoami)" == "deck" ]]; then
+    echo deck
+    return
+  fi
+  # for now, consider Ubuntu as WSL
+  if [[ -f /etc/os-release ]]; then
+    local os_name="$(. /etc/os-release && echo $NAME)"
+    if [[ "${os_name}" == "Ubuntu" ]]; then
+      echo ubuntu
+      return
+    fi
+    if [[ "${os_name}" == "EndeavourOS" ]]; then
+      echo endeavouros
+      return
+    fi
+  fi
+}
+
+#
+# source sub-bashrc depending on the current os preset
+#
+if [[ -f "${DEV_ROOT}/auliyaarc/linux/$(current_os_preset)/bashrc" ]]; then
+  source "${DEV_ROOT}/auliyaarc/linux/$(current_os_preset)/bashrc"
+fi
+
+#
+# Add custom binaries to the PATH
+#
+if [[ -d "${DEV_ROOT}/auliyaarc/linux/bin" ]]; then
+  export PATH="${PATH}:${DEV_ROOT}/auliyaarc/linux/bin"
+fi
+
+if [[ "$(current_os_preset)" != "" && -d "${DEV_ROOT}/auliyaarc/linux/$(current_os_preset)/bin" ]]; then
+  export PATH="${PATH}:${DEV_ROOT}/auliyaarc/linux/$(current_os_preset)/bin"
+fi

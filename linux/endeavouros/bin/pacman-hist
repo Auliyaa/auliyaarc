@@ -1,0 +1,55 @@
+#!/usr/bin/env python3
+import subprocess
+from datetime import datetime
+from tabulate import tabulate
+
+def run_expac_command():
+    try:
+        result = subprocess.run(
+            ['expac', '-Q', '--timefmt="%s"', '%l;%n;%v'],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        return result.stdout.splitlines()
+    except subprocess.CalledProcessError as e:
+        print(f"Error running expac command: {e}")
+        exit(1)
+    except FileNotFoundError:
+        print("Error: 'expac' command not found. Is pacman-contrib installed?")
+        exit(1)
+
+def parse_lines(lines):
+    parsed = []
+    for line in lines:
+        try:
+            # Remove any quotes from the line first
+            clean_line = line.replace('"', '')
+            timestamp_str, name, version = clean_line.split(';')
+            timestamp = int(timestamp_str)
+            parsed.append((timestamp, name, version))
+        except ValueError:
+            continue  # skip malformed lines
+    return parsed
+
+def format_timestamp(timestamp):
+    return datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M:%S")
+
+def main():
+    lines = run_expac_command()
+    entries = parse_lines(lines)
+    
+    # Sort by timestamp in ascending order (oldest first)
+    entries.sort(key=lambda x: x[0], reverse=False)
+    
+    # Prepare data for tabulate
+    table_data = []
+    for timestamp, name, version in entries:
+        date_str = format_timestamp(timestamp)
+        table_data.append([date_str, name, version])
+    
+    # Print with tabulate
+    print(tabulate(table_data, headers=["Date", "Package", "Version"], tablefmt="plain"))
+
+if __name__ == "__main__":
+    main()

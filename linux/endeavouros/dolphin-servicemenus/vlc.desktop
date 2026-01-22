@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Service
+MimeType=video/mp4;video/x-matroska;video/x-msvideo;
+X-KDE-ServiceTypes=KonqPopupMenu/Plugin
+Actions=OpenWithVLC;
+
+[Desktop Action OpenWithVLC]
+Name=Open with VLC
+Comment=Play files with VLC media player
+Exec=vlc "%f"
+Icon=vlc

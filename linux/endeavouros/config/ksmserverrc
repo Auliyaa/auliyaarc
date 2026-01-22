@@ -5,14 +5,14 @@ loginMode=emptySession
 count=0
 
 [Session: saved at previous logout]
-clientId1=10dcc56a69000174505993900000011250002
-clientId2=10dcc56a69000174505997100000011250003
-count=2
-program1=/home/auliyaa/.dropbox-dist/dropbox-lnx.x86_64-222.4.5042/dropbox
-program2=firefox
-restartCommand1=/home/auliyaa/.dropbox-dist/dropbox-lnx.x86_64-222.4.5042/dropbox,-session,10dcc56a69000174505993900000011250002_1745060034_863245
-restartCommand2=/usr/lib/firefox/firefox,--sm-client-id,10dcc56a69000174505997100000011250003
+clientId1=107475656b000176910939500000013730002
+clientId2[$d]
+count=1
+program1=firefox
+program2[$d]
+restartCommand1=/usr/lib/firefox/firefox,--sm-client-id,107475656b000176910939500000013730002
+restartCommand2[$d]
 restartStyleHint1=0
-restartStyleHint2=0
+restartStyleHint2[$d]
 userId1=auliyaa
-userId2=auliyaa
+userId2[$d]

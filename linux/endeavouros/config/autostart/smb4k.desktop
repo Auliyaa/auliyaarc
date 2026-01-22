@@ -1,6 +1,18 @@
 [Desktop Entry]
-Exec=/home/auliyaa/dev/my-bash/autostart/smb4k
+Comment[en_US]=
+Comment=
+Exec=/home/auliyaa/dev/auliyaarc/linux/endeavouros/autostart/smb4k
+GenericName[en_US]=
+GenericName=
 Icon=application-x-shellscript
+MimeType=
+Name[en_US]=smb4k
 Name=smb4k
+Path=
+StartupNotify=true
+Terminal=false
+TerminalOptions=
 Type=Application
 X-KDE-AutostartScript=true
+X-KDE-SubstituteUID=false
+X-KDE-Username=

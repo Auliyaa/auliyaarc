@@ -1,59 +1,151 @@
 
 # Arch Linux installation notes
 
-## Base software
+## Installing from Live ISO
+
+- Use **nvidia turing GPU** from the grub menu in the installer, this selects the latest nvidia drivers (590+)
+- Start the installer and select **online mode**
+- Use **plasma KDE** desktop environment
+- Use **systemd-boot** as the bootloader
+- Finish the installation, reboot and login.
+- Setup your displays.
+- In the welcome window, select **Update your mirrors** and then don't show anymore.
+- Open a terminal
 
 ```bash
+# let's configure git and fetch our bashrc files
+# ----------------------------------------------
+ssh-keygen # generate a ssh key and upload it to github
+mkdir -p ~/dev
+cd ~/dev
+git clone git@github.com:Auliyaa/auliyaarc.git
+git config --global user.name "Auliyaa"
+git config --global user.email "mymail"
+
+# now let's setup the bash environment
+# ----------------------------------------------
+cd
+rm .bashrc
+rm -fr Documents/ Music/ Pictures/ Public/ Templates/ Videos/
+ln -s ~/dev/auliyaarc/Pictures/
+ln -s ~/dev/auliyaarc/linux/bashrc ~/.bashrc
+bash # should show no error
+
+# install base software
+# ----------------------------------------------
 yay -S --noconfirm filelight discord dropbox vlc vlc-plugin-ffmpeg vlc-plugins-all git visual-studio-code-bin yakuake python-pip python gitkraken veracrypt python-pygments jq zip unzip kolourpaint onlyoffice-bin nano-syntax-highlighting python-tabulate hardinfo ytmdesktop-bin
-```
 
-## shell utils
-
-```bash
+# shell utils
+# ----------------------------------------------
 yay -S --noconfirm bat # pretty colored cat alternative
 yay -S --noconfirm gum # very nice bash library for user inputs: https://github.com/charmbracelet/gum
 yay -S --noconfirm aria2 # fast wget
-```
 
-## KDE configuration
-
-- Global theme: Ant-Dark KDE
-- Colors: Breeze Dark
-- Application Style: Breeze
-- Window decoration: Large icon size
-- Icons: Papirus Dark
-- Splash screen: Kuro the cat
-
-### KDE Connect
-
-```bash
+# KDE connect
+# ----------------------------------------------
 yay -S --noconfirm kdeconnect
-```
 
-## SDDM
+# configure KDE
+# ----------------------------------------------
+# - Global theme: Ant-Dark KDE
+# - Colors: Breeze Dark
+# - Application Style: Breeze
+# - Window decoration: Large icon size
+# - Icons: Papirus Dark (Install papirus and it will have a dark option once installed)
+# - Splash screen: Kuro the cat
+# - Login screen: Ant-Dark-Plasma-6
 
-SSDM configuration is available in KDE (login screen (SDDM))
+# reuse our synchronized config files
+# ----------------------------------------------
+rm -fr .config/ && ln -s ~/dev/auliyaarc/linux/endeavouros/config/ ~/.config
 
-## Samba shares
-
-**smb4k** can be used to add persistent mounts of samba shares:
-
-```bash
+# smb4k connects out samba share
+# ----------------------------------------------
 yay -S --noconfirm smb4k
-```
 
-Add your shares in the **Network Neighborhood** tab > **Open Mount Dialog** then bookmark your shares.
-For each share, you can right click > **Add custom settings** and check the **Always remount this share** option to ensure they are mounted on startup.
+# Add your shares in the **Network Neighborhood** tab > **Open Mount Dialog (Ctrl+O)** then bookmark your shares.
+# For each share, you can right click > **Add custom settings** and check the **Always remount this share** option to ensure they are mounted on startup.
+# Add smb4k to the autostart list of applications. Use the wrapper script in this repository's autostart folder if you want it to start minimized
 
-Add smb4k to the autostart list of applications. Use the wrapper script in this repository's autostart folder if you want it to start minimized
-
-## OBS
-
-```bash
+# OBS
+# ----------------------------------------------
 yay -S --noconfirm obs-studio obs-scene-as-transition
+
+# Fan control
+# ----------------------------------------------
+yay --noconfirm -S coolercontrol
+sudo modprobe nct6775
+sudo sensors-detect --auto
+sudo systemctl enable coolercontrold
+sudo systemctl restart coolercontrold
+
+# RGB control
+# ----------------------------------------------
+yay -S --noconfirm openrgb
+
+# Add control for the XG279Q in the main menu
+# ----------------------------------------------
+mkdir -p ~/.local/share/applications/
+cp ~/dev/auliyaarc/xg279q-control/xg279q-control.desktop ~/.local/share/applications/
+
+# Plymouth
+# ----------------------------------------------
+yay -S --noconfirm plymouth
+echo 'add_dracutmodules+=" plymouth "' | sudo tee /etc/dracut.conf.d/plymouth.conf
+
+# Append the following to /etc/kernel/cmdline:
+# splash
+
+# set the theme
+yay -S --noconfirm plymouth-theme-arch-os
+sudo plymouth-set-default-theme arch-os
+
+# ASUS motherboards sensor module
+# ----------------------------------------------
+cat << EOF | sudo tee /etc/modules-load.d/nct6775.conf
+# Load nct6775.ko at boot (ASUS motherboards sensor)
+nct6775
+EOF
+
+# Steam
+# ----------------------------------------------
+yay -S --noconfirm steam
+
+# as described here: https://askubuntu.com/questions/1356884/why-is-x86-split-lock-detection-spamming-my-syslog-when-steam-is-running
+# steam uses split locks and this spams the kernel logs
+# add this to /etc/kernel/cmdline
+# split_lock_detect=off
+
+# Bottles
+# ----------------------------------------------
+# Bottles allow you to manage separate Wine installations and can be used for either gaming or other desktop applications.
+# we use wine-staging as it provides additional patches and the codebase is rebased over the wine repo so versions are synchronized
+yay -S --noconfirm wine-staging winetricks wine-mono bottles
+yay -S --needed --asdeps --noconfirm giflib lib32-giflib gnutls lib32-gnutls v4l-utils lib32-v4l-utils libpulse lib32-libpulse alsa-plugins lib32-alsa-plugins alsa-lib lib32-alsa-lib sqlite lib32-sqlite libxcomposite lib32-libxcomposite ocl-icd lib32-ocl-icd libva lib32-libva gtk3 lib32-gtk3 gst-plugins-base-libs lib32-gst-plugins-base-libs vulkan-icd-loader lib32-vulkan-icd-loader sdl2-compat lib32-sdl2-compat lib32-gamemode
+
+# System tweaks for gaming
+# ----------------------------------------------
+# See https://wiki.archlinux.org/title/Gaming#Starting_games_in_a_separate_X_server
+# Increase vm.max_map_count
+echo 'vm.max_map_count = 2147483642' | sudo tee /etc/sysctl.d/00-gamecompatibility.conf
+
+# Cheat engines
+# ----------------------------------------------
+yay -S --noconfirm gameconqueror pince
+
+# FPS counter
+# ----------------------------------------------
+yay -S --noconfirm mangohud goverlay
+# to launch a game with mangohud from steam, edit the launch option and set it to:
+# MANGOHUD=1 %command%
+
+
+# regenerate boot options and update initramfs
+# ----------------------------------------------
+sudo reinstall-kernels 
 ```
 
-## System setup
+## Additional system setup
 
 ### multi-core makepkg  
 
@@ -106,19 +198,6 @@ __GLX_VENDOR_LIBRARY_NAME=nvidia
 ```bash
 nvidia-inst --32 # reinstall nvidia drivers via endeavour os script
 sudo reinstall-kernels
-# the following packages should be installed:
-# egl-gbm
-# egl-wayland
-# egl-x11
-# ffnvcodec-headers
-# lib32-nvidia-utils
-# libvdpau
-# ibxnvctrl
-# nvidia-hook
-# nvidia-inst
-# nvidia-open-dkms
-# nvidia-settings
-# nvidia-utils
 ```
 
 ### disable AMD integrated GPU
@@ -137,22 +216,6 @@ omit_dracutmodules+=" amdgpu "
 - Load modules at boot through files in **/etc/modules-load.d/**
 - Rebuild kernel through the **reinstall-kernels** command
 
-### Fan control
-
-```bash
-yay --noconfirm -S coolercontrol
-sudo modprobe nct6775
-sudo sensors-detect --auto
-sudo systemctl enable coolercontrold
-sudo systemctl restart coolercontrold
-```
-
-**/etc/modules-load.d/nct6775.conf**:
-```
-# Load nct6775.ko at boot (ASUS motherboards sensor)
-nct6775
-```
-
 ### swapfile creation
 
 ```bash
@@ -166,153 +229,6 @@ swapon /swapfile
 /swapfile none swap defaults 0 0
 ```
 
-### system LEDs
-
-```bash
-yay -S openrgb
-```
-
-### Power-off USB on shutdown
-
-Look in systemd/usboff and use install.bash
-
-### Control monitor inputs
-
-```bash
-mkdir -p ~/.local/share/applications/
-cp xg279q-control/xg279q-control.desktop ~/.local/share/applications/
-```
-
-## Plymouth
-
-systemd-boot entries are located in **/efi/loader/entries**
-
-```bash
-yay -S --noconfirm plymouth
-```
-
-**/etc/dracut.conf.d/plymouth.conf**:
-
-```
-add_dracutmodules+=" plymouth "
-```
-
-Append to **/etc/kernel/cmdline**
-```
-... splash
-```
-
-Now set the theme and rebuild initramfs:
-
-```bash
-yay -S --noconfirm plymouth-theme-arch-os
-sudo plymouth-set-default-theme arch-os
-sudo reinstall-kernels # regenerate boot options and update initramfs
-``` 
-
-## Gaming
-
-### Steam
-
-```
-yay -S --noconfirm steam
-```
-
-If steam window does not show on startup, install **lib32-nvidia-utils**:
-
-```bash
-yay -S --noconfirm lib32-nvidia-utils
-```
-
-If you need to run steam from CLI with logs:
-
-```bash
-steam --help
-```
-
-#### Steam spamming dmesg with x86/split lock detection messages
-
-As described [here](https://askubuntu.com/questions/1356884/why-is-x86-split-lock-detection-spamming-my-syslog-when-steam-is-running), this is due to steam using split locks while this is discouraged by the kernel.
-
-You can let the kernel ignore those events (old behavior) by adding the following kernel command line option in **/etc/kernel/cmdline**:
-
-```
-... split_lock_detect=off ...
-```
-
-And then rebuild your initramfs:
-
-```bash
-sudo reinstall-kernels # regenerate boot options and update initramfs
-``` 
-
-### Bottles
-
-Bottles allow you to manage separate Wine installations and can be used for either gaming or other desktop applications.
-
-```bash
-# we use wine-staging as it provides additional patches and the codebase is rebased over the wine repo so versions are synchronized
-yay -S --noconfirm wine-staging winetricks wine-mono bottles
-yay -S --needed --asdeps --noconfirm giflib lib32-giflib gnutls lib32-gnutls v4l-utils lib32-v4l-utils libpulse lib32-libpulse alsa-plugins lib32-alsa-plugins alsa-lib lib32-alsa-lib sqlite lib32-sqlite libxcomposite lib32-libxcomposite ocl-icd lib32-ocl-icd libva lib32-libva gtk3 lib32-gtk3 gst-plugins-base-libs lib32-gst-plugins-base-libs vulkan-icd-loader lib32-vulkan-icd-loader sdl2-compat lib32-sdl2-compat lib32-gamemode
-```
-
-### system tweaks
-
-see [this page](https://wiki.archlinux.org/title/Gaming#Starting_games_in_a_separate_X_server) for reference
-
-#### Increase vm.max_map_count
-
-**/etc/sysctl.d/00-gamecompatibility.conf**:
-
-```
-vm.max_map_count = 2147483642
-```
-
-### Cheat engine
-
-```
-yay -S --noconfirm gameconqueror pince
-```
-
-### FPS counter
-
-Install **mangohud** and its UI configurator, **goverlay**:
-
-```bash
-yay -S --noconfirm mangohud goverlay
-```
-
-To launch a game with mangohud from steam, edit the launch option and set it to:
-
-```
-MANGOHUD=1 %command%
-```
-
-### Deprecated
-
-#### Cartridges (Simple GUI to manage all games)
-
-```bash
-yay -S --noconfirm cartridges
-```
-
-#### Lutris (Epic, GOG.com, Amazon games, Ubisoft)
-
-```bash
-sudo pacman -S wine-staging
-sudo pacman -S --needed --asdeps giflib lib32-giflib gnutls lib32-gnutls v4l-utils lib32-v4l-utils libpulse lib32-libpulse alsa-plugins lib32-alsa-plugins alsa-lib lib32-alsa-lib sqlite lib32-sqlite libxcomposite lib32-libxcomposite ocl-icd lib32-ocl-icd libva lib32-libva gtk3 lib32-gtk3 gst-plugins-base-libs lib32-gst-plugins-base-libs vulkan-icd-loader lib32-vulkan-icd-loader sdl2-compat lib32-sdl2-compat lib32-gamemode
-
-yay -S --noconfirm lutris wine winetricks lib32-gnutls
-```
-
-#### EGS
-
-If the EGS fails to update, you may need to manually copy update files:
-
-```bash
-yes | cp -fr ~/Games/epic-games-store/drive_c/ProgramData/Epic/EpicGamesLauncher/Data/Update/Install/* ~/Games/epic-games-store/drive_c/Program\ Files\ \(x86\)/Epic\ Games/Launcher/
-```
-
 ## VirtualBox
 
 ```
@@ -324,14 +240,6 @@ sudo reboot
 
 ## Developer environment
  
-
-### Global gitignore
-
-```bash
-touch ~/.gitignore_global
-git config --global core.excludesFile '~/.gitignore_global'
-```
-
 ### git config
 
 **~/.gitconfig**:
@@ -353,21 +261,6 @@ Disable pager
 git config --global core.pager cat
 # to restore pager:
 #git config --global --replace-all core.pager "less -F -X"
-```
-
-### Yakuake 
-
-- Color theme: bl1nk
-- Font: Hack 14pt
-
-### Discord
-
-Disable updates in **~/.config/discord/settings.json**:
-
-```json
-{
- "SKIP_HOST_UPDATE": true
-}
 ```
 
 ## Troubleshooting

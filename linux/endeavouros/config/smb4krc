@@ -8,7 +8,7 @@ MigratedToKeychain=false
 [CompletionItems]
 CategoryCompletion=
 IpAddressCompletion=192.168.1.100
-LabelCompletion=
+LabelCompletion=data,downloads
 LocationCompletion=//192.168.1.100/data,//192.168.1.100/downloads
 LoginCompletion=
 WorkgroupCompletion=
@@ -21,7 +21,7 @@ WorkgroupCompletion=
 FirstStartup=true
 
 [MountDialog]
-2 screens: Height=256
+2 screens: Height=369
 2 screens: Width=418
 
 [Notification Messages]

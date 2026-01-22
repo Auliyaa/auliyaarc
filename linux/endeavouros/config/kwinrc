@@ -51,6 +51,12 @@ tiles={"layoutDirection":"horizontal","tiles":[{"width":0.25},{"width":0.5},{"wi
 [Tiling][d116a1a7-a7ba-4d08-9a9d-88cb672d7276][bcb12521-f614-471b-ab20-2b2ff3d2ed78]
 tiles={"layoutDirection":"horizontal","tiles":[{"width":0.25},{"width":0.5},{"width":0.25}]}
 
+[Tiling][d116a1a7-a7ba-4d08-9a9d-88cb672d7276][bd1617a9-e36f-4fb8-9158-35fa117ef8d8]
+tiles={"layoutDirection":"horizontal","tiles":[{"width":0.25},{"width":0.5},{"width":0.25}]}
+
+[Tiling][d116a1a7-a7ba-4d08-9a9d-88cb672d7276][d0b61939-5215-41ab-bfd2-f308cae5339e]
+tiles={"layoutDirection":"horizontal","tiles":[{"width":0.25},{"width":0.5},{"width":0.25}]}
+
 [Tiling][d116a1a7-a7ba-4d08-9a9d-88cb672d7276][e02deb64-2728-4fb8-b053-64ff0c748a5d]
 tiles={"layoutDirection":"horizontal","tiles":[{"width":0.25},{"width":0.5},{"width":0.25}]}
 
@@ -64,7 +70,8 @@ tiles={"layoutDirection":"horizontal","tiles":[{"width":0.25},{"width":0.5},{"wi
 tiles={"layoutDirection":"horizontal","tiles":[{"width":0.25},{"width":0.5},{"width":0.25}]}
 
 [Xwayland]
-Scale=1.25
+Scale=1
 
 [org.kde.kdecoration2]
+library=org.kde.kwin.aurorae
 theme=__aurorae__svg__Ant-Dark

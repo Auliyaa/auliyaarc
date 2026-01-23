@@ -86,7 +86,7 @@ yay -S --noconfirm openrgb
 # Add control for the XG279Q in the main menu
 # ----------------------------------------------
 mkdir -p ~/.local/share/applications/
-cp ~/dev/auliyaarc/xg279q-control/xg279q-control.desktop ~/.local/share/applications/
+cp ~/dev/auliyaarc/xg279q-control/*.desktop ~/.local/share/applications/
 
 # Plymouth
 # ----------------------------------------------
